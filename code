@@ -1,0 +1,172 @@
+
+#import libraries
+import csv
+import numpy as np
+import pandas as pd
+from collections import Counter
+from matplotlib import pyplot as plt
+import seaborn as sns
+#changed setting data fit screen on spyder
+pd.options.mode.chained_assignment = None #option panda not to show warning by date time in int
+np.set_printoptions(linewidth=2500)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', 1000)
+pd.set_option('display.width', None)
+pd.set_option('expand_frame_repr', False)
+
+
+#import into a dataframe
+df = pd.read_csv('disney_movies_total_gross.csv')
+#data cleaning
+df.isna().sum() #show missing data
+df['mpaa_rating'] = df['mpaa_rating'].fillna('Not Rated') #show missing data on rating
+df= df[df['total_gross'] != 0] #drops outliers with zero income
+df_clean = df.dropna() #drop missing data
+df_clean['release_date'] = pd.to_datetime(df_clean['release_date']) #datetime to object
+df_clean['Year'] = df_clean['release_date'].dt.year #add column with year
+print(df_clean.isna().sum()) #show missing data for every column
+print(df_clean.duplicated().sum()) #check for duplicated items
+print(df_clean.describe()) #describe dataframe
+print(df_clean.dtypes) #describe datatypes
+print(df_clean[(df_clean['total_gross']==0)])#show outliers at 0 gross
+print(df_clean) #print dataframe
+
+
+df_clean.to_csv(r'disney_movies_total_gross_clean.csv', index = False) #export to directory
+print(df_clean)
+
+df_clean['movie_title'].count() #count how many items in movie Title
+
+
+
+
+# 1. Filme Pro Jahr
+df_clean['Year'].value_counts() #films each year
+
+sns.histplot(data=df_clean, x='Year', binwidth=(1))
+plt.xticks(rotation=90)
+plt.title('Filme pro Jahr')
+plt.show()
+
+# 2a Jahresumsatz liniendiagramm
+sns.lineplot(data=df_clean, x='release_date', y='total_gross')
+plt.xticks(rotation=90)
+plt.ylabel('Gesamt Bruttoumsatz')
+plt.xlabel('Veröffentlichungsdatum')
+plt.show()
+ 
+
+
+#2b Jahresbrutto Umsatz
+sns.histplot(data=df_clean, x='Year', y='total_gross')
+plt.xticks(rotation=90)
+plt.title('Jahres Bruttoumsatz')
+plt.ylabel('Gesamt Bruttoumsatz')
+plt.xlabel('Jahr')
+plt.show()
+
+
+# 3 inflationsbereinigter Umsatz
+sns.histplot(data=df_clean, x='Year', y='inflation_adjusted_gross', color=('g'))
+plt.xticks(rotation=90)
+plt.title('Jahres Bruttoumsatz')
+plt.ylabel('inflationsbereinigter Umsatz')
+plt.xlabel('Jahr')
+plt.show()
+
+df_inflation_ten = df_clean.sort_values(by=['inflation_adjusted_gross'], ascending=False).head(10) #biggest inflation gross
+
+
+# 4a Gesamt  Bruttoumsatz per Jahr  mit Inflation
+ax=sns.lineplot(data=df_clean, x='release_date', y='total_gross', size=1)
+ax2=ax.twinx()
+df_clean.plot(x='release_date', y='inflation_adjusted_gross', ax=ax2, color='r')
+plt.xticks(rotation=90)
+ax.set_ylabel('Gesamt Bruttoumsatz')
+ax2.set_ylabel('inflationsbereinigter Umsatz')
+plt.title('Gesamt Bruttoumsatz per Jahr')
+plt.show()
+
+
+# 4b Gesamt  Bruttoumsatz per Jahr  mit Inflation (Streudiagramm)
+ax=sns.scatterplot(data=df_clean, x='release_date', y='total_gross')
+ax2=ax.twinx()
+df_clean.plot.scatter(x='release_date', y='inflation_adjusted_gross', ax=ax2, color='r', s=2)
+plt.xticks(rotation=90)
+plt.title('Gesamt Bruttomsatz pro Jahr mit und ohne Inflation')
+ax.set_ylabel('Gesamt Bruttoumsatz')
+ax2.set_ylabel('inflationsbereinigter Umsatz')
+plt.show()
+
+
+
+# 5 gesamtbrutto per Genre
+sns.histplot(data=df_clean, x='total_gross', y='genre', color=('r'))
+plt.xticks(rotation=90)
+plt.title('Gesamt Bruttoumsatz per Genre')
+plt.ylabel('Genre')
+plt.xlabel('Gesamt Bruttoumsatz')
+plt.show()
+
+
+# 6 Umsatz per Genre und Veröffentlichung 
+sns.scatterplot(data = df_clean, x = 'release_date', y = 'genre', size = 'total_gross')
+plt.title('Gesamt Bruttoumsatz pro Jahr und Genre')
+plt.ylabel('Genre')
+plt.xlabel('Veröffentlichungsjahr')
+
+7 Gesamt Genres 
+genre_count = df_clean['genre'].value_counts()
+genre_count.plot(kind = 'pie', autopct='%1.1f%%', ylabel='', fontsize=12)
+plt.tight_layout()
+plt.title('Gesamt Genres von Disney Filmen')
+plt.axis('equal')
+plt.show()
+
+# 8 Altersfreigabe (MPAA)
+rating_count = df_clean['mpaa_rating'].value_counts()
+rating_count.plot(kind = 'pie', autopct='%1.1f%%', ylabel='', fontsize=12)
+plt.axis('equal')
+plt.title('Altersfreigabe (MPAA)')
+plt.legend(['Parental Guidance Suggested','ab 13','Restricted', 'General Audiences','Not Rated'], loc='lower left', fontsize=8)
+plt.tight_layout()
+plt.show()
+
+
+#kleinere Stichprobe (total_gross)
+df_topten = df_clean.sort_values(by=['total_gross'], ascending=False).head(10) #most successful movie (income)
+df_worst_ten = df_clean.sort_values(by=['total_gross'], ascending=True).head(10) #least successful movie (income)
+df_inflation_worst_ten = df_clean.sort_values(by=['inflation_adjusted_gross'], ascending=True).head(10) #least successful movie (inflation_adjusted_gross)
+
+#9a zehn erfolgrechiste Filmen (total_gross)
+sns.lineplot(data=df_topten, x='total_gross', y='movie_title')
+plt.xticks(rotation=90)
+plt.ylabel('Filmtitel')
+plt.xlabel('Gesamt Bruttoumsatz')
+
+
+#9b zehn erfolglose Filmen(total_gross))
+sns.lineplot(data=df_worst_ten, x='total_gross', y='movie_title')
+plt.xticks(rotation=90)
+plt.ylabel('Filmtitel')
+plt.xlabel('Gesamt Bruttoumsatz')
+
+plt.show()
+
+
+#10a zehn erfolgrechiste Filmen (inflation_adjusted_gross)
+sns.lineplot(data=df_inflation_ten, x='inflation_adjusted_gross', y='movie_title')
+plt.xticks(rotation=90)
+plt.ylabel('Filmtitel')
+plt.xlabel('inflationsbereinigter Umsatz')
+
+
+#10b zehn erfolglose Filmen((inflation_adjusted_gross))
+sns.lineplot(data=df_inflation_worst_ten, x='inflation_adjusted_gross', y='movie_title')
+plt.xticks(rotation=90)
+plt.ylabel('Filmtitel')
+plt.xlabel('inflationsbereinigter Umsatz')
+
+plt.show()
+
+
